@@ -1,0 +1,37 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    base64 (0.3.0)
+    bcrypt (3.1.22)
+    byebug (13.0.0)
+      reline (>= 0.6.0)
+    io-console (0.9.2)
+    nio4r (2.7.5)
+    puma (8.0.2)
+      nio4r (~> 2.0)
+    rack (3.2.7)
+    rack-contrib (2.5.0)
+      rack (< 4)
+    rack-session (2.1.2)
+      base64 (>= 0.1.0)
+      rack (>= 3.0.0)
+    reline (0.7.0)
+      io-console (~> 0.5)
+    warden (1.2.9)
+      rack (>= 2.0.9)
+
+PLATFORMS
+  arm64-darwin-23
+  ruby
+
+DEPENDENCIES
+  bcrypt (~> 3.1)
+  byebug
+  puma (~> 8.0)
+  rack (~> 3.2)
+  rack-contrib
+  rack-session (~> 2.0)
+  warden (~> 1.2)
+
+BUNDLED WITH
+   2.6.3
