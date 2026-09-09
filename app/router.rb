@@ -16,19 +16,30 @@ class Router
 
   def call(env)
     request = Rack::Request.new(env)
-    match_data = nil
-    route = @routes.find do |r|
-      next false unless r.verb == request.request_method
-      match_data = r.pattern.match(request.path_info)
-    end
-    return not_found unless route && match_data
+    route, path_params = match(request)
+    return not_found unless route
 
-    path_params = route.param_names.zip(match_data.captures).to_h
-    controller = route.controller_class.new(env, path_params)
-    controller.public_send(route.action)
+    dispatch(route, env, path_params)
   end
 
   private
+
+  def match(request)
+    @routes.each do |route|
+      next unless route.verb == request.request_method
+
+      match_data = route.pattern.match(request.path_info)
+      next unless match_data
+
+      return [route, route.param_names.zip(match_data.captures).to_h]
+    end
+    nil
+  end
+
+  def dispatch(route, env, path_params)
+    controller = route.controller_class.new(env, path_params)
+    controller.public_send(route.action)
+  end
 
   def parse_path(path)
     param_names = []
