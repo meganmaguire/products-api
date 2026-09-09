@@ -1,0 +1,329 @@
+openapi: 3.0.3
+
+info:
+  title: Fudo Challenge API
+  version: 1.0.0
+  description: |
+    Small JSON API for managing products, with asynchronous creation.
+
+    **Authentication.** Session-cookie based. `POST /sessions` validates credentials and
+    sets the `rack.session` cookie; every other operation requires that cookie to be sent
+    back. There is no token or `Authorization` header.
+
+    **Asynchronous creation.** `POST /products` does not create the product inline. It
+    enqueues a job and returns `202` with a `job_id` and a `job_url`. The client polls
+    `GET /jobs/{id}` until it stops returning `202`; the final response of the poll is the
+    response of the underlying operation (`201` with the created product, or `422` on
+    failure). Creation takes ~5 seconds by design.
+
+    **State is in-memory.** Products, jobs and users live in process memory and are lost on
+    restart. A single user is seeded at boot: `usuario` / `12345678`.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Sessions
+    description: Authentication
+  - name: Products
+    description: Product listing and asynchronous creation
+  - name: Jobs
+    description: Status of asynchronous jobs
+
+security:
+  - sessionCookie: []
+
+paths:
+  /sessions:
+    post:
+      tags: [Sessions]
+      summary: Log in
+      operationId: createSession
+      description: |
+        Authenticates a username/password pair and starts a session. On success the
+        response carries a `Set-Cookie: rack.session=...` header that must be sent with
+        every subsequent request. Any previous session is discarded first.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+            example:
+              username: usuario
+              password: "12345678"
+      responses:
+        '200':
+          description: Logged in. The session cookie is set.
+          headers:
+            Set-Cookie:
+              description: Session cookie, e.g. `rack.session=<value>; path=/; HttpOnly`
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Successful log in
+        '401':
+          description: Missing or invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid username or password
+
+  /products:
+    get:
+      tags: [Products]
+      summary: List products
+      operationId: listProducts
+      description: Returns every product currently held in memory.
+      responses:
+        '200':
+          description: An array of products. An empty array if there are no products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+              example:
+                - id: 1
+                  name: Cafe
+                - id: 2
+                  name: Medialuna
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Products]
+      summary: Request product creation (asynchronous)
+      operationId: createProduct
+      description: |
+        Enqueues the creation of a product and returns `202` and the job id. The product
+        does not exist yet when this call returns: poll `job_url` (`GET /jobs/{id}`)
+        until it returns something other than `202`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+            example:
+              name: Cafe
+      responses:
+        '202':
+          description: Creation accepted and enqueued. Poll `job_url` for the result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAccepted'
+              example:
+                job_id: 1
+                job_url: http://localhost:3000/jobs/1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: The `name` field is missing, null, or blank.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'Missing parameter: name'
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Get a product
+      operationId: getProduct
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: The requested product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              example:
+                id: 1
+                name: Cafe
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No product with that id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Product not found
+
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Poll the status of an asynchronous job
+      operationId: getJob
+      description: |
+        Returns `202` while the job is still pending. Once the worker has finished, this
+        endpoint replays the worker's own response. The status code and body change
+        depending on the outcome of the enqueued operation.
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '201':
+          description: Successful job response once it finishes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              example:
+                id: 1
+                name: Cafe
+        '202':
+          description: The job response while processing the worker.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobProcessing'
+              example:
+                status: processing
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No job with that id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Job not found
+        '422':
+          description: An error occured while processing the job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: An error occured while processing the request
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: rack.session
+      description: |
+        Session cookie issued by `POST /sessions`. Note that browsers and most HTTP clients
+        send this automatically once set; with curl use `-c jar` then `-b jar`.
+
+  parameters:
+    ProductId:
+      name: id
+      in: path
+      required: true
+      description: Product ID.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      example: 1
+    JobId:
+      name: id
+      in: path
+      required: true
+      description: Job ID, as returned in `job_id` by `POST /products`.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      example: 1
+
+  responses:
+    Unauthorized:
+      description: No valid session cookie was sent.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+
+  schemas:
+    Credentials:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: usuario
+        password:
+          type: string
+          format: password
+          example: "12345678"
+
+    Product:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: Cafe
+
+    ProductInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Non-blank product name.
+          example: Cafe
+
+    JobAccepted:
+      type: object
+      required: [job_id, job_url]
+      properties:
+        job_id:
+          type: integer
+          format: int64
+          example: 1
+        job_url:
+          type: string
+          format: uri
+          description: Absolute URL to poll for the result of this job.
+          example: http://localhost:3000/jobs/1
+
+    JobProcessing:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [processing]
+          description: Present only while the job has not finished.
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+          example: Not found

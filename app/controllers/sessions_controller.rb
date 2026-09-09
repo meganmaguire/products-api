@@ -5,6 +5,6 @@ class SessionsController < BaseController
   def create
     warden.reset_session!
     authenticate!
-    render(200, { message: "Logged in" })
+    render(200, { message: "Successful log in" })
   end
 end

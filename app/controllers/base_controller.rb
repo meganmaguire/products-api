@@ -26,7 +26,6 @@ class BaseController
   end
 
   def unauthorized
-    byebug
     render(401, { error: 'Unauthorized' })
   end
 
@@ -40,5 +39,9 @@ class BaseController
 
   def job_response(id)
     { job_id: id, job_url: "http://localhost:3000/jobs/#{id}" }
+  end
+
+  def not_found_response
+    render(404, { error: "#{entity} not found" })
   end
 end

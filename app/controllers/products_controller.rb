@@ -7,28 +7,36 @@ class ProductsController < BaseController
   def index
     authenticate!
 
-    render(200, ProductStore.all.map { |product| ProductSerializer.new(product).as_json })
+    render(200, products)
   end
 
   def show
     authenticate!
-
-    product = ProductStore.find(params["id"])
-    return render(404, { error: "Product not found" }) unless product
+    return not_found_response unless product
 
     render(200, ProductSerializer.new(product).as_json)
   end
 
   def create
     authenticate!
+    return missing_param_response unless valid_params?
 
-    return render(422, { error: "Missing parameter: name" }) unless valid_params?
-
-    response = create_product
-    render(202, response)
+    render(202, create_product)
   end
 
   private
+
+  def products
+    @products ||= ProductStore.all.map { |product| ProductSerializer.new(product).as_json }
+  end
+
+  def product
+    @product ||= ProductStore.find(params["id"])
+  end
+
+  def missing_param_response
+    render(422, { error: "Missing parameter: name" })
+  end
 
   def valid_params?
     !name.nil? && !name.to_s.strip.empty?
@@ -43,5 +51,9 @@ class ProductsController < BaseController
     JobStore.save(job)
     JobQueue.enqueue(job.id)
     job_response(job.id)
+  end
+
+  def entity
+    'Product'
   end
 end

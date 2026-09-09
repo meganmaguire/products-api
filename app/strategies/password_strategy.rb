@@ -8,12 +8,17 @@ class PasswordStrategy < Warden::Strategies::Base
   end
 
   def authenticate!
-    user = UserStore.find_by_username(params["username"])
-    if user && user.authenticate(params["password"])
-      success!(user)
-    else
-      fail!("Invalid username or password")
-    end
+    valid_password? ? success!(user) : fail!("Invalid username or password")
+  end
+
+  def user
+    @user ||= UserStore.find_by_username(params["username"])
+  end
+
+  private
+
+  def valid_password?
+    user && user.authenticate(params["password"])
   end
 end
 

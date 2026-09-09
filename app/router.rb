@@ -10,7 +10,7 @@ class Router
   end
 
   def add(verb, path, controller_class, action)
-    pattern, param_names = compile(path)
+    pattern, param_names = parse_path(path)
     @routes << Route.new(verb.to_s.upcase, pattern, param_names, controller_class, action)
   end
 
@@ -30,7 +30,7 @@ class Router
 
   private
 
-  def compile(path)
+  def parse_path(path)
     param_names = []
     segments = path.split("/").map do |segment|
       if segment.start_with?(":")
@@ -46,6 +46,6 @@ class Router
   end
 
   def not_found
-    [404, { "content-type" => "application/json" }, [{ error: "Not found" }.to_json]]
+    [404, { "content-type" => "application/json" }, [{ error: "Service not found" }.to_json]]
   end
 end
