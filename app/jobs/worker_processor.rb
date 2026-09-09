@@ -7,6 +7,7 @@ class WorkerProcessor
 
   def run
     loop do
+      job = JobStore.find(id)
       status, response = job.type.new(job.params).execute
       job.response = { status: status, body: response }
       next job.status = :finished if sucessful_response?(status)
@@ -17,11 +18,7 @@ class WorkerProcessor
   private
 
   def id
-    @id ||= JobQueue.pop
-  end
-
-  def job
-    @job ||= JobStore.find(id)
+    JobQueue.pop
   end
 
   def sucessful_response?(status)

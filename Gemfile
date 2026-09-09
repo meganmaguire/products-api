@@ -7,3 +7,7 @@ gem "warden", "~> 1.2"
 gem "bcrypt", "~> 3.1"
 gem "byebug"
 gem "rack-contrib"
+
+group :test do
+  gem "rspec", "~> 3.13"
+end
