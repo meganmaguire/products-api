@@ -1,0 +1,1 @@
+HTTP es un protocolo de la capa de Aplicación de TCP/IP de solicitud-respuesta, utilizado para transportar información entre clientes y servidores. Posee principalmente una serie de métodos que representan las operaciones posibles, distintos encabezados con información adicional, y un cuerpo de solicitud/respuesta.

@@ -1,0 +1,1 @@
+TCP es un protocolo de la capa de transporte de TCP/IP, orientado a la conexión, que garantiza la entrega correcta de paquetes, sin duplicados y de manera ordenada. La conexión con el receptor se establece a través de un Handshake.
