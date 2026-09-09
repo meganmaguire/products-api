@@ -1,7 +1,7 @@
-require_relative "base_controller"
-require_relative "../stores/job_store"
-require_relative "../jobs/job_queue"
-require_relative "../serializers/product_serializer"
+require_relative 'base_controller'
+require_relative '../stores/job_store'
+require_relative '../jobs/job_queue'
+require_relative '../serializers/product_serializer'
 
 class ProductsController < BaseController
   def index
@@ -31,11 +31,11 @@ class ProductsController < BaseController
   end
 
   def product
-    @product ||= ProductStore.find(params["id"])
+    @product ||= ProductStore.find(params['id'])
   end
 
   def missing_param_response
-    render(422, { error: "Missing parameter: name" })
+    render(422, { error: 'Missing parameter: name' })
   end
 
   def valid_params?
@@ -43,7 +43,7 @@ class ProductsController < BaseController
   end
 
   def name
-    @name ||= params["name"]
+    @name ||= params['name']
   end
 
   def create_product

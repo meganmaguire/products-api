@@ -1,5 +1,5 @@
-require_relative "../stores/product_store"
-require_relative "../serializers/product_serializer"
+require_relative '../stores/product_store'
+require_relative '../serializers/product_serializer'
 
 class CreateProductWorker
   attr_accessor :name

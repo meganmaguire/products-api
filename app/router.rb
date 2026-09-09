@@ -1,5 +1,5 @@
-require "rack"
-require "json"
+require 'rack'
+require 'json'
 require_relative 'controllers/base_controller'
 
 class Router
@@ -43,20 +43,20 @@ class Router
 
   def parse_path(path)
     param_names = []
-    segments = path.split("/").map do |segment|
-      if segment.start_with?(":")
+    segments = path.split('/').map do |segment|
+      if segment.start_with?(':')
         param_names << segment[1..]
-        "([^/]+)"
+        '([^/]+)'
       else
         Regexp.escape(segment)
       end
     end
-    pattern = segments.join("/")
-    pattern = "/" if pattern.empty?
+    pattern = segments.join('/')
+    pattern = '/' if pattern.empty?
     [Regexp.new("\\A#{pattern}\\z"), param_names]
   end
 
   def not_found
-    [404, { "content-type" => "application/json" }, [{ error: "Service not found" }.to_json]]
+    [404, { 'content-type' => 'application/json' }, [{ error: 'Service not found' }.to_json]]
   end
 end

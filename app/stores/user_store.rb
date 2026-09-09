@@ -1,5 +1,5 @@
-require "bcrypt"
-require_relative "../models/user"
+require 'bcrypt'
+require_relative '../models/user'
 
 class UserStore
   class << self

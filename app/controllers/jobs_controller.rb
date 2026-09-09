@@ -1,6 +1,6 @@
-require_relative "base_controller"
-require_relative "../jobs/job_queue"
-require_relative "../stores/job_store"
+require_relative 'base_controller'
+require_relative '../jobs/job_queue'
+require_relative '../stores/job_store'
 
 class JobsController < BaseController
   def show
@@ -14,7 +14,7 @@ class JobsController < BaseController
   private
 
   def job
-    @job ||= JobStore.find(params["id"])
+    @job ||= JobStore.find(params['id'])
   end
 
   def processing_response

@@ -1,4 +1,4 @@
-require_relative "../models/job"
+require_relative '../models/job'
 
 class JobStore
   class << self

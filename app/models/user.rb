@@ -1,4 +1,4 @@
-require "bcrypt"
+require 'bcrypt'
 
 class User
   attr_reader :id, :username, :password_digest
